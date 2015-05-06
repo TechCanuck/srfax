@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["techcanuck@gmail.com"]
 
   spec.summary       = "SR Fax Module"
-  spec.description   = %q{TODO: Write a longer description or delete this line.}
+  spec.description   = %q{SRFax API Wrapper for Ruby: http://www.srfax.com}
   spec.homepage      = "http://rubygems.org/gems/srfax"
   spec.license       = "MIT"
 
