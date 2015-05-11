@@ -7,7 +7,7 @@ Welcome to your new gem! In this directory, you'll find the files you need to be
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'srfax'
+gem 'sr_fax'
 ```
 
 And then execute:

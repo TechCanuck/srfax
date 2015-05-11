@@ -4,14 +4,14 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'srfax/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "srfax"
-  spec.version       = Srfax::VERSION
+  spec.name          = "sr_fax"
+  spec.version       = SrFax::VERSION
   spec.authors       = ["Jeff Klink", "Sean Esson"]
   spec.email         = ["techcanuck@gmail.com"]
 
   spec.summary       = %q{SR Fax Module provides and easy way to access SR fax online services to send, receive or query faxes}
   spec.description   = %q{SRFax API Wrapper for Ruby: http://www.srfax.com}
-  spec.homepage      = "http://rubygems.org/gems/srfax"
+  spec.homepage      = "http://rubygems.org/gems/sr_fax"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }

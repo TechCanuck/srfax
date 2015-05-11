@@ -1,3 +1,3 @@
-module Srfax
+module SrFax
   VERSION = "0.1.0"
 end
