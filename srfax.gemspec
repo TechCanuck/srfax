@@ -1,7 +1,6 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'srfax/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "sr_fax"
@@ -9,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Jeff Klink", "Sean Esson"]
   spec.email         = ["techcanuck@gmail.com"]
 
-  spec.summary       = %q{SR Fax Module provides and easy way to access SR fax online services to send, receive or query faxes}
+  spec.summary       = %q{SR Fax Module provides and easy way to access SR fax online services to send, receive, delete or query faxes}
   spec.description   = %q{This is the 'unofficial' SRFax (http://www.srfax.com) API wrapper for ruby.  The API documentation for SRFax can be found at https://www.srfax.com/srf/media/SRFax-REST-API-Documentation.pdf}
   spec.homepage      = "https://github.com/TechCanuck/srfax"
   spec.license       = "MIT"

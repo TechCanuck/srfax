@@ -1,12 +1,10 @@
-require "srfax/version"
 require 'RestClient'
-#require 'Logger'
 require 'active_support'
 
-# DOX @ https://www.srfax.com/srf/media/SRFax-REST-API-Documentation.pdf
-# This class serves as the integration component between the application and the 
-# SRFax cloud service.  All actions are performed against the cloud based service
-#  Currently Implements
+# This class serves as the integration component between the application and the SRFax cloud service.
+# API DOX available @ https://www.srfax.com/srf/media/SRFax-REST-API-Documentation.pdf.  
+#
+# This module currently Implements the following POST commands from the API:
 #  Get_Usage – Retrieves the account usage
 #  Update_Viewed_Status – Mark a inbound or outbound fax as read or unread.
 #  Queue_Fax - Schedules a fax to be sent with or without cover page.
@@ -22,13 +20,13 @@ require 'active_support'
 #  Delete_Pending_Fax - Deletes a specified queued fax which has not been processed
 #  Stop_Fax - Removes a scheduled fax from the queue
 module SrFax
+  VERSION = '0.3.0pre'
 
   # Base URL for accessing SRFax API
-  mattr_accessor :base
   BASE_URI = "https://www.srfax.com/SRF_SecWebSvc.php"
 
-  # Base URL for accessing SRFax API
-  mattr_accessor :id, :defaults, :logger
+  mattr_accessor :defaults
+  # Default values hash to use with all #execute commands
   @@defaults = {
     access_id: '1234',
     access_pwd: 'password',
@@ -36,33 +34,42 @@ module SrFax
     sResponseFormat: 'JSON' # XML or JSON
   }
 
+  mattr_accessor :logger
+  # Logger object for use in standalone modeo or with Rails
   @@logger = defined?(Rails) ? Rails.logger : Logger.new(STDOUT)
 
   class << self
     # Allow configuring Srfax with a block, these will be the methods default values for passing to 
-    #  each function and will be overridden by any methods locally posted variables (ex: :action)
+    # each function and will be overridden by any methods locally posted variables (ex: :action)
+    #
+    # @yield Accepts a block of valid configuration options to set or override default values
     #
     # Example:
     #   Srfax.setup do |config|
     #     config.defaults[:access_id] = '1234'
     #     config.defaults[:access_pwd] = 'password'
     #   end
-    def setup
+    def setup(&block)
       yield self
     end
   
-    # Views the remote inbox.  This call does NOT update the viewed/read status of the fax
-    # Example: {"Status"=>"Success", "Result"=>[{"FileName"=>"20150430124505-6104-19_1|20360095", "ReceiveStatus"=>"Ok", 
+    # Views the remote inbox.  By default this call does NOT update the viewed
+    # or read status of the fax unless specified in options.
+    #
+    # @param status [String] Specify the status of the message you are listing (UNREAD, ALL, READ)
+    # @param options [Hash] An optional hash paramter to ovveride any default values (ie., Account ID)
+    # @option options [String] :sPeriod Specify the period to query.  Accepts 'ALL' or 'RANGE'
+    # @option options [String] :sStatDate Used with :sPeriod and denotes the period to start at.  Format is 'YYYYMMDD'
+    # @option options [String] :sEndDate Used with :sPeriod and denotes the period to endd at.  Format is 'YYYYMMDD'
+    # @option options [String] :sIncludeSubUsers Include subuser accounts ('Y' or 'N')
+    # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
+    #
+    # Example Payload for Return: 
+    #   {"Status"=>"Success", "Result"=>[{"FileName"=>"20150430124505-6104-19_1|20360095", "ReceiveStatus"=>"Ok", 
     #   "Date"=>"Apr 30/15 02:45 PM", "EpochTime"=>1430423105, "CallerID"=>"9056193547", "RemoteID"=>"", "Pages"=>"1", 
     #   "Size"=>"5000", "ViewedStatus"=>"N"} ]}
     def view_inbox(status = 'UNREAD', options = {})
       logger.info("Checking fax inbox from cloud service")
-      # optional variables 
-      # sPeriod: (ALL or RANGE)
-      # sStartDate: YYYYMMDD
-      # sEndDate: YYYYMMDD
-      # sViewedStatus: UNREAD, READ or ALL
-      # sIncludeSubUsers: Y or N  (if you want to see all faxes on subaccounts as well)
       postVariables = { 
         :action => "Get_Fax_Inbox", 
         :sViewedStatus => status.upcase
@@ -76,27 +83,39 @@ module SrFax
   
       return res
     end
-    #module_function :view_inbox
   
-    # Uses post Get_Usage
-    # returns hash of encoded response 
-    #  Example: {"Status"=>"Success", "Result"=>[{"UserID"=>34092, "Period"=>"ALL", "ClientName"=>nil, "SubUserID"=>0, "BillingNumber"=>"8669906402", "NumberOfFaxes"=>5, "NumberOfPages"=>8}]}
+    # Uses post Get_Usage to fetch the current account usage statistics (for all associated accounts)
+    #
+    # @param options [Hash] An optional hash paramter to ovveride any default values (ie., Account ID)
+    # @option options [String] :sPeriod Specify the period to query.  Accepts 'ALL' or 'RANGE'
+    # @option options [String] :sStatDate Used with :sPeriod and denotes the period to start at.  Format is 'YYYYMMDD'
+    # @option options [String] :sEndDate Used with :sPeriod and denotes the period to endd at.  Format is 'YYYYMMDD'
+    # @option options [String] :sIncludeSubUsers Include subuser accounts ('Y' or 'N')
+    # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
+    #
+    # Example Payload for Return: 
+    #   {"Status"=>"Success", "Result"=>[{"UserID"=>1234, "Period"=>"ALL", 
+    #   "ClientName"=>nil, "SubUserID"=>0, "BillingNumber"=>"8669906402", "NumberOfFaxes"=>5, "NumberOfPages"=>8}]}
+    #
     # optional variables 
     #   sPeriod: (ALL or RANGE), sStartDate: YYYYMMDD, sEndDate: YYYYMMDD
     #   sIncludeSubUsers: Y or N  (if you want to see all faxes on subaccounts as well)
-    def view_usage
+    def view_usage(options = {})
       logger.info "Viewing fax usage from cloud service"
       postVariables = { :action => "Get_Fax_Usage" }
       res = execute(postVariables)
       return res
     end
   
-    # Uses post Get_Usage
-    # returns hash of encoded response
-    def view_outbox
-      # optional variables : 
-      #   sPeriod: (ALL or RANGE), sStartDate: YYYYMMDD, sEndDate: YYYYMMDD
-      #   sIncludeSubUsers: Y or N  (if you want to see all faxes on subaccounts as well)
+    # Uses post Get_Fax_Outbox to retrieve the usage for the account (and all subaccounts)
+    #
+    # @param options [Hash] An optional hash paramter to ovveride any default values (ie., Account ID)
+    # @option options [String] :sPeriod Specify the period to query.  Accepts 'ALL' or 'RANGE'
+    # @option options [String] :sStatDate Used with :sPeriod and denotes the period to start at.  Format is 'YYYYMMDD'
+    # @option options [String] :sEndDate Used with :sPeriod and denotes the period to endd at.  Format is 'YYYYMMDD'
+    # @option options [String] :sIncludeSubUsers Include subuser accounts ('Y' or 'N')
+    # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
+    def view_outbox(options = {})
       logger.info "Viewing fax outbox from cloud service"
       postVariables = { :action => "Get_Fax_Outbox" }
       res = execute(postVariables)
@@ -109,14 +128,15 @@ module SrFax
       return res
     end
   
-    # Uses POST Retrieve_Fax – Returns a specified sent or received fax file in PDF or TIFF format
-    #  Note: this function updates the viewed status once we get it
-    #  :descriptor is what is returns from the POST Filename field from the view_inbox result
-    #  :direction is either 'IN' or 'OUT' for inbound or outbound fax
-    # This service will return a base64 formatted file in PDF form in the 'Result' field on success
-    # optional variables : 
-    #   sFaxFileName: filename, sFaxDetailsID: located as part of the filenaem (everything after the |)
-    #   sDirection: 'IN' or 'OUT', 
+    # Uses POST Retrieve_Fax to retrieve a specified fax from the server.  Returns it in the default
+    # specified format (PDF or TIFF)
+    # 
+    # @param descriptor [String] Specify the status of the message you are listing (UNREAD, ALL, READ)
+    # @param direction [String] Either 'IN' or 'OUT' to specify the inbox or outbox
+    # @param options [Hash] An optional hash paramter to ovveride any default values (ie., Account ID)
+    # @option options [String] :sMarkasViewed Update the fax status to viewed (or unviewed). Accepts 'Y' or 'N'
+    # @option options [String] :sFaxFormat Update the format to retrieve the file in ('PDF' or 'TIFF')
+    # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
     def get_fax(descriptor, direction, options = {}) 
       logger.info "Retrieving fax from cloud service in the direction of '#{direction}', Descriptor:'#{descriptor}'"
       faxname,faxid = descriptor.split('|')
@@ -138,11 +158,12 @@ module SrFax
     end
     
     # Update the status (read/unread) for a particular fax
-    #  :marking is either Y or N - to either mark it as READ or UNREAD
-    #  :direction is either 'IN' or 'OUT' for inbox or outbox
-    #  :descriptor is what is returns from the POST Filename field from the view_inbox result
-    # optional variables : 
-    #   sFaxFileName: filename, sFaxDetailsID: located as part of the filenaem (everything after the |)
+    #
+    # @param descriptor [String] Specify the status of the message you are listing (UNREAD, ALL, READ)
+    # @param direction [String] Either 'IN' or 'OUT' to specify the inbox or outbox
+    # @param options [Hash] An optional hash paramter to ovveride any default values (ie., Account ID)
+    # @option options [String] :sMarkasViewed Update the fax status to viewed (or unviewed). Accepts 'Y' or 'N'.  Defaults to Y
+    # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
     def update_fax_status(descriptor, direction, options = {})
       logger.info "Updating a fax in the cloud service in the direction of '#{direction}', Descriptor:'#{descriptor}'"
       faxname,faxid = descriptor.split('|')
@@ -163,6 +184,15 @@ module SrFax
     end
     
     # Delete a particular fax from the SRFax cloud service
+    #
+    # @param descriptor [String] THe descriptor provided by SRFax which identifies a unique fax
+    # @param direction [String] Either 'IN' or 'OUT' to specify the inbox or outbox
+    # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
+    #
+    # Example Payload for Return: 
+    #   {"Status"=>"Success", "Result"=>[{"FileName"=>"20150430124505-6104-19_1|20360095", "ReceiveStatus"=>"Ok", 
+    #   "Date"=>"Apr 30/15 02:45 PM", "EpochTime"=>1430423105, "CallerID"=>"9056193547", "RemoteID"=>"", "Pages"=>"1", 
+    #   "Size"=>"5000", "ViewedStatus"=>"N"} ]}
     #  :direction is either 'IN' or 'OUT' for inbox or outbox
     #  :descriptor is what is returns from the POST Filename field from the view_inbox result
     def delete_fax(descriptor, direction)
@@ -184,7 +214,11 @@ module SrFax
     end
 
     private
-    # Execute the POST command to the cloud service
+
+    # Actually execute the RESTful post command to the #BASE_URI
+    #
+    # @param postVariables [String] The list of variables to apply in the POST body when executing the request
+    # @return [Hash] The hash payload value including a proper status.  Will never return nil.
     def execute(postVariables)
       res = RestClient::Request.execute :url => BASE_URI, :method => :post, :payload => postVariables.merge(defaults).to_json, :content_type => :json, :accept => :json
       return_data = nil
