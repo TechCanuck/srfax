@@ -1,6 +1,6 @@
 z Srfax
 
-This is the '''unofficial''' SRFax (http://www.srfax.com) API wrapper for ruby.  The API documentation for SRFax can be found at https://www.srfax.com/srf/media/SRFax-REST-API-Documentation.pdf
+This is the 'unofficial' SRFax (http://www.srfax.com) API wrapper for ruby.  The API documentation for SRFax can be found at https://www.srfax.com/srf/media/SRFax-REST-API-Documentation.pdf
 
 ## Installation
 
@@ -31,10 +31,10 @@ SrFax.setup do |config|
   config.defaults[:access_pwd] = 'password'
 end
 
-Srfax.view_inbox
-Srfax.view_outbox
-Srfax.update_fax_status(descriptor, direction) 
-Srfax.get_fax(descriptor, direction, {:sMarkasViewed => 'Y'} 
+SrFax.view_inbox
+SrFax.view_outbox
+SrFax.update_fax_status(descriptor, direction) 
+SrFax.get_fax(descriptor, direction, {:sMarkasViewed => 'Y'} 
 ```
 
 The SrFax module currently supports the following functions
