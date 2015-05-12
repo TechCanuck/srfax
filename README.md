@@ -1,6 +1,6 @@
-# Srfax
+z Srfax
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/srfax`. To experiment with that code, run `bin/console` for an interactive prompt.
+This is the '''unofficial''' SRFax (http://www.srfax.com) API wrapper for ruby.  The API documentation for SRFax can be found at https://www.srfax.com/srf/media/SRFax-REST-API-Documentation.pdf
 
 ## Installation
 
@@ -14,32 +14,55 @@ And then execute:
 
     $ bundle
 
-Or install it yourself as:
+Or install it yourself using: 
 
-    $ gem install srfax
+    $ gem install sr_fax
 
 ## Usage
 
-require 'Srfax'
+To get started, simply open the console view and require the SrFax module.  Once you have completed that, enter your account credentials using the SrFax setup block, and then begin to execute calls. All status' returned are simply formatted hashes from the SrFax service.
 
-Srfax.setup do |config|
+```sh
+
+require 'SrFax'
+
+SrFax.setup do |config|
   config.defaults[:access_id] = '1234'
   config.defaults[:access_pwd] = 'password'
 end
 
 Srfax.view_inbox
 Srfax.view_outbox
+Srfax.update_fax_status(descriptor, direction) 
+Srfax.get_fax(descriptor, direction, {:sMarkasViewed => 'Y'} 
+```
+
+The SrFax module currently supports the following functions
+  - Sending and receiving faxes
+  - Updating flags on the inbox or outbox faxes
+  - Deleting faxes from either the inbox or outbox
+  - View account usage
+  - Download faxes from the inbox or outbox
+
+Not yet implemented:
+  - Sending faxes
+  - Delete pending faxes (to be sent)
+  - Stop fax
+  - Multifax status
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `bin/console` for an interactive prompt that will allow you to experiment.
+After checking out the repo, run `bin/console` for an interactive prompt that will allow you to experiment.
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release` to create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
 
 ## Contributing
 
-1. Fork it ( https://bitbucket.org/[my-github-username]/srfax/fork )
+1. Fork it ( https://github.com/TechCanuck/srfax/fork )
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create a new Pull Request
+
+Licensing: **MIT**  
+Remember: **'Great opportunities to help others seldom come, but small ones surround us daily' -- Sally Koch**

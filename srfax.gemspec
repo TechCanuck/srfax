@@ -26,5 +26,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "bundler", "~> 1.7"
   spec.add_development_dependency "rake", "~> 10.0"
   spec.add_runtime_dependency 'logger', '~> 1'
+  spec.add_runtime_dependency 'activesupport', '~> 4.2'
   spec.add_runtime_dependency 'rest-client', '~> 1.7'
 end
