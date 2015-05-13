@@ -24,7 +24,7 @@ To get started, simply open the console view and require the SrFax module.  Once
 
 ```ruby
 
-require 'SrFax'
+require 'srfax'
 
 SrFax.setup do |config|
   config.defaults[:access_id] = '1234'
