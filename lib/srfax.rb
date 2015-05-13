@@ -12,18 +12,18 @@ require 'active_support'
 #  Get_Fax_Outbox - Returns a list of faxes sent for a specified period of time
 #  Retrieve_Fax – Returns a specified sent or received fax file in PDF or TIFF format
 #  Delete_Fax - Deletes specified received or sent faxes
-#
-#  Unimplemented:
 #  Get_FaxStatus – Determines the status of a fax that has been scheduled for delivery.
 #  Get_MultiFaxStatus – Determines the status of a multiple faxes that hav been
 #     scheduled for delivery.
-#  Delete_Pending_Fax - Deletes a specified queued fax which has not been processed
 #  Stop_Fax - Removes a scheduled fax from the queue
+#
+#  Unimplemented:
+#  Delete_Pending_Fax - Deletes a specified queued fax which has not been processed
 module SrFax
   VERSION = '0.3.0pre'
 
   # Base URL for accessing SRFax API
-  BASE_URI = "https://www.srfax.com/SRF_SecWebSvc.php"
+  BASE_URL = "https://www.srfax.com/SRF_SecWebSvc.php"
 
   mattr_accessor :defaults
   # Default values hash to use with all #execute commands
@@ -31,6 +31,7 @@ module SrFax
     access_id: '1234',
     access_pwd: 'password',
     sFaxFormat: 'PDF', # Default format, PDF or TIF
+    sCallerID: '5555555555', # MUST be 10 digits
     sResponseFormat: 'JSON' # XML or JSON
   }
 
@@ -48,6 +49,7 @@ module SrFax
     #   Srfax.setup do |config|
     #     config.defaults[:access_id] = '1234'
     #     config.defaults[:access_pwd] = 'password'
+    #     config.defaults[:sCallerID] = '5555555555'
     #   end
     def setup(&block)
       yield self
@@ -182,7 +184,87 @@ module SrFax
       res = execute(postVariables)
       return res
     end
+
+    # Schedules a fax to be sent with or without cover page
+    #
+    # @param faxid [String, Array] Get the state of 'id' as given by the #queue_fax call
+    # @param options [Hash] An optional hash paramter to ovveride any default values (ie., Account ID)
+    # @option options [String] :sResponseFormat The output response format for 
+    # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
+    def get_fax_status(faxids, options = {})
+      logger.info "Gathering fax status information for id(s):'#{faxids}'"
+
+      if faxids.is_a? String
+        action = "Get_FaxStatus"
+      elsif faxids.is_a? Array
+        action = "Get_MultiFaxStatus"
+        faxids = faxids.join('|')
+      else
+        logger.warn "Error wth fax ids parameter id(s):'#{faxid}'"
+        return { :Status => "Failure" }
+      end
+
+      postVariables = {   
+        :action => action,
+        :sFaxDetailsID => faxids
+      }.merge!(options)
+      res = execute(postVariables)
+      return res
+    end
+
+    # Determines the state of a fax that has been scheduled for delivery.  Use queue fax to schedule a fax
+    # for delivery.  Note: no validation is done on the fields prior to sending.
+    #
+    # @param senderEmail [String] Email address of the sender
+    # @param faxType [String] 'SINGLE' or 'BROADCAST'
+    # @param faxNumber [String, Array] Single 11 digit fax number or up to 50 x 11 fax numbers
+    # @param options [Hash] An optional hash paramter to ovveride any default values (ie., Account ID)
+    # @option options [String] :sResponseFormat The output response format for 
+    # @option options [String] :sAccountCode Internal reference number (Max of 20 Characters)
+    # @option options [String] :sRetries Number of times the system is to retry a number if busy or an error is encountered – number from 0 to 6.
+    # @option options [String] :sCoverPage If you want to use one of the cover pages on file, specify the cover page you wish to use “Basic”, “Standard” , “Company” or “Personal”. If a cover page is not provided then all cover page variable will be ignored.  NOTE: If the default cover page on the account is set to “Attachments ONLY” the cover page will NOT be created irrespective of this variable.
+    # @option options [String] :sFaxFromHeader From: On the Fax Header Line (max 30 Char)
+    # @option options [String] :sCPFromName Sender’s name on the Cover Page
+    # @option options [String] :sCPToName Recipient’s name on the Cover Page
+    # @option options [String] :sCPOrganization Organization on the Cover Page
+    # @option options [String] :sCPSubject Subject line on the Cover Page**
+    # @option options [String] :sCPComments Comments placed in the body of the Cover Page
+    # @option options [String] :sFileName_x (See supported file types @  https://www.srfax.com/faqs)
+    # @option options [String] :sFileContent_x (See supported file types)  ￼Base64 encoding of file contents.
+    # @option options [String] :sNotifyURL Provide an absolute URL (beginning with http:// or https://) and the SRFax system will POST back the fax status record when the fax completes. See the ‘NOTIFY URL POST’ section below for details of what is posted.
+    # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
+    def queue_fax(senderEmail, faxType, faxNumber, options = {})
+      logger.info "Attempting to queue fax"
+      faxNumber = faxNumber.join('|') if faxNumber.is_a? Array
+
+      postVariables = {   
+        :action => "Queue_Fax",
+        :SenderEmail => senderEmail,
+        :sFaxType => faxType,
+        :sToFaxNumber => faxNumber,
+        :sFaxDetailsID => faxids
+      }.merge!(options)
+      res = execute(postVariables)
+      return res
+    end
     
+    # Attempt to stop a fax from being delivered.  See the result payload for possible condiitions in fax status
+    #
+    # @param faxid [String] Stop fax with 'id' as given by the #queue_fax call
+    # @param options [Hash] An optional hash paramter to ovveride any default values (ie., Account ID)
+    # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
+    def stop_fax(faxid, options = {})
+      action = nil 
+      logger.info "Sending stop fax command for id:'#{faxid}'"
+
+      postVariables = {   
+        :action => 'Stop_Fax',
+        :sFaxDetailsID => faxid
+      }.merge!(options)
+      res = execute(postVariables)
+      return res
+    end
+
     # Delete a particular fax from the SRFax cloud service
     #
     # @param descriptor [String] THe descriptor provided by SRFax which identifies a unique fax
@@ -215,12 +297,12 @@ module SrFax
 
     private
 
-    # Actually execute the RESTful post command to the #BASE_URI
+    # Actually execute the RESTful post command to the #BASE_URL
     #
     # @param postVariables [String] The list of variables to apply in the POST body when executing the request
     # @return [Hash] The hash payload value including a proper status.  Will never return nil.
     def execute(postVariables)
-      res = RestClient::Request.execute :url => BASE_URI, :method => :post, :payload => postVariables.merge(defaults).to_json, :content_type => :json, :accept => :json
+      res = RestClient::Request.execute :url => BASE_URL, :method => :post, :payload => postVariables.merge(defaults).to_json, :content_type => :json, :accept => :json
       return_data = nil
       return_data = JSON.parse(res) if res
 
