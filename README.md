@@ -22,7 +22,7 @@ Or install it yourself using:
 
 To get started, simply open the console view and require the SrFax module.  Once you have completed that, enter your account credentials using the SrFax setup block, and then begin to execute calls. All status' returned are simply formatted hashes from the SrFax service.
 
-```sh
+```ruby
 
 require 'SrFax'
 
@@ -35,6 +35,12 @@ SrFax.view_inbox
 SrFax.view_outbox
 SrFax.update_fax_status(descriptor, direction) 
 SrFax.get_fax(descriptor, direction, {:sMarkasViewed => 'Y'} 
+```
+
+As an example, here is a sample queue fax call to send a fax
+
+```ruby
+SrFax.queue_fax "yourname@yourdomain.com", "SINGLE", "18888888888", {sFileName_1: "file1.txt", sFileContent_1: Base64.encode64("Sample Fax")}
 ```
 
 The SrFax module currently supports the following functions
