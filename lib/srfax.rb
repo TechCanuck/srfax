@@ -1,5 +1,7 @@
-require 'RestClient'
+require 'restclient'
 require 'active_support'
+require 'active_support/core_ext/hash'
+require 'version'
 
 # This class serves as the integration component between the application and the SRFax cloud service.
 # API DOX available @ https://www.srfax.com/srf/media/SRFax-REST-API-Documentation.pdf.  
@@ -16,12 +18,9 @@ require 'active_support'
 #  Get_MultiFaxStatus – Determines the status of a multiple faxes that hav been
 #     scheduled for delivery.
 #  Stop_Fax - Removes a scheduled fax from the queue
-#
-#  Unimplemented:
-#  Delete_Pending_Fax - Deletes a specified queued fax which has not been processed
+# Unimplemented methods:
+#  Delete_Pending_Fax - THIS DOESN'T EXIST - but is documented to exist
 module SrFax
-  VERSION = '0.3.0pre'
-
   # Base URL for accessing SRFax API
   BASE_URL = "https://www.srfax.com/SRF_SecWebSvc.php"
 
@@ -187,7 +186,7 @@ module SrFax
 
     # Schedules a fax to be sent with or without cover page
     #
-    # @param faxid [String, Array] Get the state of 'id' as given by the #queue_fax call
+    # @param faxids [String, Array] Get the state of 'id' as given by the #queue_fax call
     # @param options [Hash] An optional hash paramter to ovveride any default values (ie., Account ID)
     # @option options [String] :sResponseFormat The output response format for 
     # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
@@ -241,8 +240,7 @@ module SrFax
         :action => "Queue_Fax",
         :SenderEmail => senderEmail,
         :sFaxType => faxType,
-        :sToFaxNumber => faxNumber,
-        :sFaxDetailsID => faxids
+        :sToFaxNumber => faxNumber
       }.merge!(options)
       res = execute(postVariables)
       return res
@@ -275,8 +273,6 @@ module SrFax
     #   {"Status"=>"Success", "Result"=>[{"FileName"=>"20150430124505-6104-19_1|20360095", "ReceiveStatus"=>"Ok", 
     #   "Date"=>"Apr 30/15 02:45 PM", "EpochTime"=>1430423105, "CallerID"=>"9056193547", "RemoteID"=>"", "Pages"=>"1", 
     #   "Size"=>"5000", "ViewedStatus"=>"N"} ]}
-    #  :direction is either 'IN' or 'OUT' for inbox or outbox
-    #  :descriptor is what is returns from the POST Filename field from the view_inbox result
     def delete_fax(descriptor, direction)
       logger.info "Deleting a fax in the cloud service in the direction of '#{direction}', Descriptor:'#{descriptor}'"
       faxname,faxid = descriptor.split('|')
@@ -311,7 +307,7 @@ module SrFax
         return_data = { :Status => "Failure" } 
       end
 
-      return return_data
+      return return_data.with_indifferent_access
     end
   end
 end
