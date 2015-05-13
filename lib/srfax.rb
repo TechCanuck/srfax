@@ -229,8 +229,8 @@ module SrFax
     # @option options [String] :sNotifyURL Provide an absolute URL (beginning with http:// or https://) and the SRFax system will POST back the fax status record when the fax completes. See the ‘NOTIFY URL POST’ section below for details of what is posted.
     # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable  
     #
-    # Example code (this will send a fax with 'sample fax' as the body:
-    #   
+    # Example code (this will send a fax with 'Sample Fax' as the fileContent field):
+    #   SrFax.queue_fax "yourname@yourdomain.com", "SINGLE", "18669906402", {sFileName_1: "file1.txt", sFileContent_1: Base64.encode64("Sample Fax")}
     def queue_fax(senderEmail, receiverNumber, faxType, options = {})
       logger.info "Attempting to queue fax"
       receiverNumber = receiverNumber.join('|') if receiverNumber.is_a? Array
