@@ -21,6 +21,8 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "bundler", "~> 1.6"
   spec.add_development_dependency "rake", "~> 10.0"
+  spec.add_development_dependency "pry", "~> 0.8"
+  spec.add_development_dependency "yard", "~> 0.8"
   spec.add_dependency 'logger', '~> 1'
   spec.add_dependency 'activesupport', '~> 4.2'
   spec.add_dependency 'rest-client', '~> 1.7'

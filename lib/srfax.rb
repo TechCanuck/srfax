@@ -96,11 +96,7 @@ module SrFax
     #
     # Example Payload for Return: 
     #   {"Status"=>"Success", "Result"=>[{"UserID"=>1234, "Period"=>"ALL", 
-    #   "ClientName"=>nil, "SubUserID"=>0, "BillingNumber"=>"8669906402", "NumberOfFaxes"=>5, "NumberOfPages"=>8}]}
-    #
-    # optional variables 
-    #   sPeriod: (ALL or RANGE), sStartDate: YYYYMMDD, sEndDate: YYYYMMDD
-    #   sIncludeSubUsers: Y or N  (if you want to see all faxes on subaccounts as well)
+    #   "ClientName"=>nil, "SubUserID"=>0, "BillingNumber"=>"8888888888", "NumberOfFaxes"=>5, "NumberOfPages"=>8}]}
     def view_usage(options = {})
       logger.info "Viewing fax usage from cloud service"
       postVariables = { :action => "Get_Fax_Usage" }
@@ -215,8 +211,8 @@ module SrFax
     # for delivery.  Note: no validation is done on the fields prior to sending.
     #
     # @param senderEmail [String] Email address of the sender
+    # @param receiverNumber [String, Array] Single 11 digit fax number or up to 50 x 11 fax numbers
     # @param faxType [String] 'SINGLE' or 'BROADCAST'
-    # @param faxNumber [String, Array] Single 11 digit fax number or up to 50 x 11 fax numbers
     # @param options [Hash] An optional hash paramter to ovveride any default values (ie., Account ID)
     # @option options [String] :sResponseFormat The output response format for 
     # @option options [String] :sAccountCode Internal reference number (Max of 20 Characters)
@@ -229,18 +225,21 @@ module SrFax
     # @option options [String] :sCPSubject Subject line on the Cover Page**
     # @option options [String] :sCPComments Comments placed in the body of the Cover Page
     # @option options [String] :sFileName_x (See supported file types @  https://www.srfax.com/faqs)
-    # @option options [String] :sFileContent_x (See supported file types)  ￼Base64 encoding of file contents.
+    # @option options [String] :sFileContent_x Base64 encoding of file contents.
     # @option options [String] :sNotifyURL Provide an absolute URL (beginning with http:// or https://) and the SRFax system will POST back the fax status record when the fax completes. See the ‘NOTIFY URL POST’ section below for details of what is posted.
-    # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
-    def queue_fax(senderEmail, faxType, faxNumber, options = {})
+    # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable  
+    #
+    # Example code (this will send a fax with 'sample fax' as the body:
+    #   
+    def queue_fax(senderEmail, receiverNumber, faxType, options = {})
       logger.info "Attempting to queue fax"
-      faxNumber = faxNumber.join('|') if faxNumber.is_a? Array
+      receiverNumber = receiverNumber.join('|') if receiverNumber.is_a? Array
 
       postVariables = {   
         :action => "Queue_Fax",
-        :SenderEmail => senderEmail,
+        :sSenderEmail => senderEmail,
         :sFaxType => faxType,
-        :sToFaxNumber => faxNumber
+        :sToFaxNumber => receiverNumber
       }.merge!(options)
       res = execute(postVariables)
       return res
@@ -298,13 +297,14 @@ module SrFax
     # @param postVariables [String] The list of variables to apply in the POST body when executing the request
     # @return [Hash] The hash payload value including a proper status.  Will never return nil.
     def execute(postVariables)
-      res = RestClient::Request.execute :url => BASE_URL, :method => :post, :payload => postVariables.merge(defaults).to_json, :content_type => :json, :accept => :json
+      logger.debug postVariables.merge(defaults)
+      res = RestClient.post BASE_URL, postVariables.merge(defaults).to_json, :content_type => :json, :accept => :json
       return_data = nil
       return_data = JSON.parse(res) if res
 
       if return_data.nil? || return_data.fetch("Status", "Failure") != "Success"
         logger.info "Execution of SR Fax command not successful" 
-        return_data = { :Status => "Failure" } 
+        return_data = { :Status => "Failure", :Result => return_data.fetch("Result", "") } 
       end
 
       return return_data.with_indifferent_access
