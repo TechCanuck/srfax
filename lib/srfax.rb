@@ -37,6 +37,7 @@ module SrFax
   mattr_accessor :logger
   # Logger object for use in standalone modeo or with Rails
   @@logger = defined?(Rails) ? Rails.logger : Logger.new(STDOUT)
+  @@logger.level = Logger::INFO
 
   class << self
     # Allow configuring Srfax with a block, these will be the methods default values for passing to 
@@ -67,10 +68,10 @@ module SrFax
     #
     # Example Payload for Return: 
     #   {"Status"=>"Success", "Result"=>[{"FileName"=>"20150430124505-6104-19_1|20360095", "ReceiveStatus"=>"Ok", 
-    #   "Date"=>"Apr 30/15 02:45 PM", "EpochTime"=>1430423105, "CallerID"=>"9056193547", "RemoteID"=>"", "Pages"=>"1", 
+    #   "Date"=>"Apr 30/15 02:45 PM", "EpochTime"=>1430423105, "CallerID"=>"5555555555", "RemoteID"=>"", "Pages"=>"1", 
     #   "Size"=>"5000", "ViewedStatus"=>"N"} ]}
     def view_inbox(status = 'UNREAD', options = {})
-      logger.info("Checking fax inbox from cloud service")
+      logger.debug "Checking fax inbox from cloud service"
       postVariables = { 
         :action => "Get_Fax_Inbox", 
         :sViewedStatus => status.upcase
@@ -98,7 +99,7 @@ module SrFax
     #   {"Status"=>"Success", "Result"=>[{"UserID"=>1234, "Period"=>"ALL", 
     #   "ClientName"=>nil, "SubUserID"=>0, "BillingNumber"=>"8888888888", "NumberOfFaxes"=>5, "NumberOfPages"=>8}]}
     def view_usage(options = {})
-      logger.info "Viewing fax usage from cloud service"
+      logger.debug "Viewing fax usage from cloud service"
       postVariables = { :action => "Get_Fax_Usage" }
       res = execute(postVariables)
       return res
@@ -113,7 +114,7 @@ module SrFax
     # @option options [String] :sIncludeSubUsers Include subuser accounts ('Y' or 'N')
     # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
     def view_outbox(options = {})
-      logger.info "Viewing fax outbox from cloud service"
+      logger.debug "Viewing fax outbox from cloud service"
       postVariables = { :action => "Get_Fax_Outbox" }
       res = execute(postVariables)
   
@@ -135,14 +136,14 @@ module SrFax
     # @option options [String] :sFaxFormat Update the format to retrieve the file in ('PDF' or 'TIFF')
     # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
     def get_fax(descriptor, direction, options = {}) 
-      logger.info "Retrieving fax from cloud service in the direction of '#{direction}', Descriptor:'#{descriptor}'"
+      logger.debug "Retrieving fax from cloud service in the direction of '#{direction}', Descriptor:'#{descriptor}'"
       faxname,faxid = descriptor.split('|')
       if (faxname.nil? or faxid.nil?)
-        logger.info "Valid descriptor not provided to get_fax function call.  Descriptor:'#{descriptor}'"
+        logger.debug "Valid descriptor not provided to get_fax function call.  Descriptor:'#{descriptor}'"
         return nil
       end
   
-      logger.info "Retrieving fax from cloud service"
+      logger.debug "Retrieving fax from cloud service"
       postVariables = {   
         :action => "Retrieve_Fax",
         :sFaxFileName => descriptor,
@@ -162,10 +163,10 @@ module SrFax
     # @option options [String] :sMarkasViewed Update the fax status to viewed (or unviewed). Accepts 'Y' or 'N'.  Defaults to Y
     # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
     def update_fax_status(descriptor, direction, options = {})
-      logger.info "Updating a fax in the cloud service in the direction of '#{direction}', Descriptor:'#{descriptor}'"
+      logger.debug "Updating a fax in the cloud service in the direction of '#{direction}', Descriptor:'#{descriptor}'"
       faxname,faxid = descriptor.split('|')
       if (faxname.nil? or faxid.nil?)
-        logger.info "Valid descriptor not provided to get_fax function call.  Descriptor:'#{descriptor}'"
+        logger.debug "Valid descriptor not provided to get_fax function call.  Descriptor:'#{descriptor}'"
         return nil
       end
 
@@ -187,7 +188,7 @@ module SrFax
     # @option options [String] :sResponseFormat The output response format for 
     # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
     def get_fax_status(faxids, options = {})
-      logger.info "Gathering fax status information for id(s):'#{faxids}'"
+      logger.debug "Gathering fax status information for id(s):'#{faxids}'"
 
       if faxids.is_a? String
         action = "Get_FaxStatus"
@@ -230,9 +231,9 @@ module SrFax
     # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable  
     #
     # Example code (this will send a fax with 'Sample Fax' as the fileContent field):
-    #   SrFax.queue_fax "yourname@yourdomain.com", "SINGLE", "18669906402", {sFileName_1: "file1.txt", sFileContent_1: Base64.encode64("Sample Fax")}
+    #   SrFax.queue_fax "yourname@yourdomain.com", "SINGLE", "18888888888", {sFileName_1: "file1.txt", sFileContent_1: Base64.encode64("Sample Fax")}
     def queue_fax(senderEmail, receiverNumber, faxType, options = {})
-      logger.info "Attempting to queue fax"
+      logger.debug "Attempting to queue fax"
       receiverNumber = receiverNumber.join('|') if receiverNumber.is_a? Array
 
       postVariables = {   
@@ -252,7 +253,7 @@ module SrFax
     # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
     def stop_fax(faxid, options = {})
       action = nil 
-      logger.info "Sending stop fax command for id:'#{faxid}'"
+      logger.debug "Sending stop fax command for id:'#{faxid}'"
 
       postVariables = {   
         :action => 'Stop_Fax',
@@ -270,13 +271,13 @@ module SrFax
     #
     # Example Payload for Return: 
     #   {"Status"=>"Success", "Result"=>[{"FileName"=>"20150430124505-6104-19_1|20360095", "ReceiveStatus"=>"Ok", 
-    #   "Date"=>"Apr 30/15 02:45 PM", "EpochTime"=>1430423105, "CallerID"=>"9056193547", "RemoteID"=>"", "Pages"=>"1", 
+    #   "Date"=>"Apr 30/15 02:45 PM", "EpochTime"=>1430423105, "CallerID"=>"5555555555", "RemoteID"=>"", "Pages"=>"1", 
     #   "Size"=>"5000", "ViewedStatus"=>"N"} ]}
     def delete_fax(descriptor, direction)
-      logger.info "Deleting a fax in the cloud service in the direction of '#{direction}', Descriptor:'#{descriptor}'"
+      logger.debug "Deleting a fax in the cloud service in the direction of '#{direction}', Descriptor:'#{descriptor}'"
       faxname,faxid = descriptor.split('|')
       if (faxname.nil? or faxid.nil?)
-        logger.info "Valid descriptor not provided to get_fax function call.  Descriptor:'#{descriptor}'"
+        logger.debug "Valid descriptor not provided to get_fax function call.  Descriptor:'#{descriptor}'"
         return nil
       end
   
@@ -303,7 +304,7 @@ module SrFax
       return_data = JSON.parse(res) if res
 
       if return_data.nil? || return_data.fetch("Status", "Failure") != "Success"
-        logger.info "Execution of SR Fax command not successful" 
+        logger.debug "Execution of SR Fax command not successful" 
         return_data = { :Status => "Failure", :Result => return_data.fetch("Result", "") } 
       end
 
