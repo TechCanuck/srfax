@@ -34,6 +34,12 @@ module SrFax
     sResponseFormat: 'JSON' # XML or JSON
   }
 
+  mattr_accessor :connection_defaults
+  # Default values to use with the RestClient connection
+  @@connection_defaults = {
+    timeout: 180
+  }
+
   mattr_accessor :logger
   # Logger object for use in standalone modeo or with Rails
   @@logger = defined?(Rails) ? Rails.logger : Logger.new(STDOUT)
@@ -299,9 +305,37 @@ module SrFax
     # @return [Hash] The hash payload value including a proper status.  Will never return nil.
     def execute(postVariables)
       logger.debug postVariables.merge(defaults)
-      res = RestClient.post BASE_URL, postVariables.merge(defaults).to_json, :content_type => :json, :accept => :json
+      # redirect where necessary
+      res = RestClient::Request.execute(:method => :post, :url => BASE_URL, 
+        :payload => postVariables.merge(defaults).to_json, 
+        :timeout => connection_defaults[:timeout], :open_timeout => connection_defaults[:timeout], 
+        :headers => {:accept => :json}) { |response, request, result, &block|
+          if [301, 302, 307].include? response.code
+            response.follow_redirection(request, result, &block)
+          elsif [200].include? response.code
+            # default behaviour for OK requests
+            response.return!(request, result, &block)
+          else
+            # suppress the throw's by RestClient
+            response = Oj.dump({"Status"=>"Failure", "Result"=>"#{response}"}, mode: :compat)
+          end
+        }
+    
+#      res = RestClient.post(BASE_URL, postVariables.merge(defaults).to_json, 
+#        :content_type => :json, :accept => :json, 
+#        :timeout => connection_defaults[:timeout], :open_timeout => connection_defaults[:timeout] ){ |response, request, result, &block|
+#          if [301, 302, 307].include? response.code
+#            response.follow_redirection(request, result, &block)
+#          elsif [200].include? response.code
+#            # default behaviour
+#            response.return!(request, result, &block)
+#          else
+#            # suppress the throw's by RestClient
+#            response = {"Status"=>"Failure", "Result"=>"#{response}"}.to_json
+#          end
+#        }
       return_data = nil
-      return_data = JSON.parse(res) if res
+      return_data = !res.nil? ? JSON.parse(res) : nil
 
       if return_data.nil? || return_data.fetch("Status", "Failure") != "Success"
         logger.debug "Execution of SR Fax command not successful" 

@@ -29,6 +29,7 @@ require 'srfax'
 SrFax.setup do |config|
   config.defaults[:access_id] = '1234'
   config.defaults[:access_pwd] = 'password'
+  config.connection_defaults[:timeout] = 180
 end
 
 SrFax.view_inbox
@@ -49,12 +50,6 @@ The SrFax module currently supports the following functions
   - Deleting faxes from either the inbox or outbox
   - View account usage
   - Download faxes from the inbox or outbox
-
-Not yet implemented:
-  - Sending faxes
-  - Delete pending faxes (to be sent)
-  - Stop fax
-  - Multifax status
 
 ## Development
 
