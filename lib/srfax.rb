@@ -41,9 +41,13 @@ module SrFax
   }
 
   mattr_accessor :logger
-  # Logger object for use in standalone modeo or with Rails
-  @@logger = defined?(Rails) ? Rails.logger : Logger.new(STDOUT)
-  @@logger.level = Logger::INFO
+  # Logger object for use in standalone mode or with Rails
+  if defined?(Rails)
+    @@logger = Rails.logger
+  else
+    @@logger = Logger.new(STDOUT)
+    @@logger.level = Logger::INFO
+  end
 
   class << self
     # Allow configuring Srfax with a block, these will be the methods default values for passing to 
