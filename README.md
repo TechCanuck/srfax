@@ -7,7 +7,7 @@ This is the 'unofficial' SRFax (http://www.srfax.com) API wrapper for ruby.  The
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'sr_fax'
+gem 'srfax'
 ```
 
 And then execute:
@@ -16,7 +16,7 @@ And then execute:
 
 Or install it yourself using:
 
-    $ gem install sr_fax
+    $ gem install srfax
 
 ## Usage
 
