@@ -29,7 +29,7 @@ require 'srfax'
 SrFax.setup do |config|
   config.defaults[:access_id] = '1234'
   config.defaults[:access_pwd] = 'password'
-  config.connection_defaults[:timeout] = 180
+  config.logger = Rails.logger
 end
 
 SrFax.view_inbox

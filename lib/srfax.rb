@@ -35,14 +35,8 @@ module SrFax
     sResponseFormat: 'JSON' # XML or JSON
   }
 
-  mattr_accessor :connection_defaults
-  # Default values to use with the RestClient connection
-  @@connection_defaults = {
-    timeout: 180
-  }
-
   mattr_accessor :logger
-  # Logger object for use in standalone mode or with Rails
+  # Logger object for use in standalone mode or with Rails.
   if defined?(Rails)
     @@logger = Rails.logger
   else
@@ -109,7 +103,7 @@ module SrFax
     # Example Payload for Return:
     #   {"Status"=>"Success", "Result"=>[{"UserID"=>1234, "Period"=>"ALL",
     #   "ClientName"=>nil, "SubUserID"=>0, "BillingNumber"=>"8888888888", "NumberOfFaxes"=>5, "NumberOfPages"=>8}]}
-    def view_usage(_options = {})
+    def view_usage(options = {})
       logger.debug 'Viewing fax usage from cloud service'
       postVariables = { action: 'Get_Fax_Usage' }
       res = execute(postVariables)
@@ -124,7 +118,7 @@ module SrFax
     # @option options [String] :sEndDate Used with :sPeriod and denotes the period to endd at. Format is 'YYYYMMDD'
     # @option options [String] :sIncludeSubUsers Include subuser accounts ('Y' or 'N')
     # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
-    def view_outbox(_options = {})
+    def view_outbox(options = {})
       logger.debug 'Viewing fax outbox from cloud service'
       postVariables = { action: 'Get_Fax_Outbox' }
       res = execute(postVariables)
