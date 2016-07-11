@@ -1,7 +1,8 @@
 require 'restclient'
 require 'active_support'
 require 'active_support/core_ext/hash'
-require 'version'
+require 'json'
+require 'srfax/version'
 
 # This class serves as the integration component between the application and the SRFax cloud service.
 # API DOX available @ https://www.srfax.com/srf/media/SRFax-REST-API-Documentation.pdf.
@@ -241,7 +242,7 @@ module SrFax
     # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
     #
     # Example code (this will send a fax with 'Sample Fax' as the fileContent field):
-    #   SrFax.queue_fax "yourname@yourdomain.com", "SINGLE", "18888888888", {sFileName_1: "file1.txt", sFileContent_1: Base64.encode64("Sample Fax")}
+    #   SrFax.queue_fax "yourname@yourdomain.com", "18888888888", "SINGLE", {sFileName_1: "file1.txt", sFileContent_1: Base64.encode64("Sample Fax")}
     def queue_fax(senderEmail, receiverNumber, faxType, options = {})
       logger.debug 'Attempting to queue fax'
       receiverNumber = receiverNumber.join('|') if receiverNumber.is_a? Array
@@ -262,7 +263,6 @@ module SrFax
     # @param options [Hash] An optional hash paramter to ovveride any default values (ie., Account ID).
     # @return [Hash] A hash containing the return value (Success/Failure) and the payload where applicable
     def stop_fax(faxid, options = {})
-      action = nil
       logger.debug "Sending stop fax command for id: '#{faxid}'"
 
       postVariables = {
@@ -310,33 +310,17 @@ module SrFax
     def execute(postVariables)
       logger.debug postVariables.merge(defaults)
       # Redirect where necessary.
-      res = RestClient::Request.execute(
-        method: :post, url: BASE_URL,
-        payload: postVariables.merge(defaults).to_json,
-        timeout: connection_defaults[:timeout],
-        open_timeout: connection_defaults[:timeout],
-        headers: { accept: :json }
-      ) do |response, request, result, &block|
-        if [301, 302, 307].include? response.code
-          response.follow_redirection(request, result, &block)
-        elsif [200].include? response.code
-          # default behaviour for OK requests
-          response.return!(request, result, &block)
-        else
-          # suppress the throw's by RestClient
-          response = Oj.dump({ 'Status' => 'Failure', 'Result' => response.to_s }, mode: :compat)
-        end
+      res = RestClient.post(BASE_URL, postVariables.merge(defaults), { accept: :json })
+      unless res.code == 200
+        return { 'Status' => 'Failed', 'Result' => res.body }.with_indifferent_access
       end
 
-      return_data = nil
-      return_data = !res.nil? ? JSON.parse(res) : nil
+      return_data = JSON.parse(res.body).with_indifferent_access
 
-      if return_data.nil? || return_data.fetch('Status', 'Failure') != 'Success'
+      if return_data['Status'] == 'Failed'
         logger.debug 'Execution of SR Fax command not successful'
-        return_data = { Status: 'Failure', Result: return_data.fetch('Result', '') }
       end
-
-      return_data.with_indifferent_access
+      return_data
     end
   end
 end
