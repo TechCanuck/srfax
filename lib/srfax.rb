@@ -84,7 +84,7 @@ module SrFax
       res = execute(postVariables)
 
       if res[:Status] != 'Failure'
-        faxcount = res['Result'].count
+        faxcount = res['Result'].length
         faxcount > 0 ? logger.debug("Found #{faxcount} new fax(es)") : logger.debug('No faxes found matching that criteria')
       end
 
@@ -124,7 +124,7 @@ module SrFax
       res = execute(postVariables)
 
       if res[:Status] != 'Failure'
-        faxcount = res['Result'].count
+        faxcount = res['Result'].length
         faxcount > 0 ? logger.debug("Found #{faxcount} new fax(es)") : logger.debug('No faxes found matching that criteria')
       end
 
