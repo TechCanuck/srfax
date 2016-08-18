@@ -14,7 +14,7 @@ And then execute:
 
     $ bundle
 
-Or install it yourself using: 
+Or install it yourself using:
 
     $ gem install sr_fax
 
@@ -29,13 +29,13 @@ require 'srfax'
 SrFax.setup do |config|
   config.defaults[:access_id] = '1234'
   config.defaults[:access_pwd] = 'password'
-  config.connection_defaults[:timeout] = 180
+  config.logger = Rails.logger
 end
 
 SrFax.view_inbox
 SrFax.view_outbox
-SrFax.update_fax_status(descriptor, direction) 
-SrFax.get_fax(descriptor, direction, {:sMarkasViewed => 'Y'} 
+SrFax.update_fax_status(descriptor, direction)
+SrFax.get_fax(descriptor, direction, {:sMarkasViewed => 'Y'}
 ```
 
 As an example, here is a sample queue fax call to send a fax
@@ -65,5 +65,5 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create a new Pull Request
 
-Licensing: **MIT**  
+Licensing: **MIT**
 Remember: **'Great opportunities to help others seldom come, but small ones surround us daily' -- Sally Koch**

@@ -9,3 +9,4 @@ gemfiles/*.lock
 /spec/reports/
 /tmp/
 *.gem
+.DS_Store
