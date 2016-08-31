@@ -302,9 +302,9 @@ module SrFax
     # @param postVariables [String] The list of variables to apply in the POST body when executing the request.
     # @return [Hash] The hash payload value including a proper status. Will never return nil.
     def execute(postVariables)
-      logger.debug postVariables.merge(defaults)
+      logger.debug defaults.merge(postVariables)
       # Redirect where necessary.
-      res = RestClient.post(BASE_URL, postVariables.merge(defaults), { accept: :json })
+      res = RestClient.post(BASE_URL, defaults.merge(postVariables), { accept: :json })
       unless res.code == 200
         return { 'Status' => 'Failed', 'Result' => res.body }.with_indifferent_access
       end
